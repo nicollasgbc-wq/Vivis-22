@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Painel do administrador · Caderneta Escolar</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font:14px/1.45 system-ui,"Segoe UI",Arial,sans-serif;background:#f3f4fb;color:#0f172a}
+[hidden]{display:none!important}button,input,select{font:inherit}
+button{cursor:pointer;border:1px solid #e0e3f0;background:#fff;border-radius:12px;padding:9px 14px;font-weight:700}button:hover{border-color:#4f46e5}
+.pr{background:linear-gradient(135deg,#6366f1,#4338ca);color:#fff;border:0}
+input,select{border:1px solid #e0e3f0;border-radius:12px;padding:9px 12px;background:#fff;min-width:0}
+#lg{min-height:100vh;display:grid;place-items:center;padding:16px;background:linear-gradient(135deg,#1e1b4b,#4338ca)}
+.c{background:#fff;border-radius:24px;padding:30px;width:100%;max-width:380px;box-shadow:0 30px 70px -20px rgba(0,0,0,.6)}
+.c h1{margin:0 0 4px;font-size:22px}.c p{margin:0 0 14px;color:#667085}.c input{width:100%;margin-bottom:10px}.c .pr{width:100%;padding:11px}
+#lm{min-height:20px;color:#be123c;margin:8px 0 0}
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:16px 22px;background:linear-gradient(120deg,#1e1b4b,#4338ca);color:#fff}
+header h1{margin:0;font-size:18px}header small{display:block;color:#c7d2fe}header div{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+header button{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.3)}#st{color:#c7d2fe;font-size:12px}
+.k{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:16px 22px 0}
+.k div{background:#fff;border:1px solid #e6e8f2;border-radius:16px;padding:12px 16px}.k small{display:block;font-size:10px;font-weight:800;color:#667085;text-transform:uppercase;letter-spacing:.08em}.k b{font-size:24px}
+.k div:last-child b{color:#be123c}
+.f{display:flex;flex-wrap:wrap;gap:8px;padding:14px 22px}.f input{flex:1;min-width:160px}
+.w{margin:0 22px 22px;background:#fff;border:1px solid #e6e8f2;border-radius:18px;overflow:auto;max-height:68vh}
+table{border-collapse:separate;border-spacing:0;width:100%}th,td{padding:8px 12px;border-bottom:1px solid #eef0f7;white-space:nowrap;text-align:center;font-variant-numeric:tabular-nums}
+th{position:sticky;top:0;background:#312e81;color:#fff;font-size:12px;z-index:1}td.l,th.l{text-align:left}
+tr:hover td{background:#f5f6ff}tr.b td.m{background:#ffe4e6;color:#be123c;font-weight:800}tr.a td.m{background:#d1fae5;color:#047857;font-weight:800}
+.e{padding:50px;color:#667085;text-align:center}
+@media(max-width:700px){.k{grid-template-columns:repeat(2,1fr);padding:12px 12px 0}.f,header{padding:12px}.w{margin:0 12px 16px}}
+</style></head><body>
+<div id="lg"><div class="c"><h1>🎓 Painel do administrador</h1><p>Entre com a conta de administrador para ver as notas de todos os professores.</p>
+<input id="le" type="email" placeholder="E-mail" autocomplete="username"><input id="lp" type="password" placeholder="Senha" autocomplete="current-password">
+<button class="pr" id="go">Entrar</button><p id="lm"></p></div></div>
+<div id="ap" hidden>
+<header><div><span style="font-size:26px">🎓</span><h1>Notas de todos os professores<small>Somente leitura · Caderneta Escolar</small></h1></div>
+<div><span id="st"></span><button id="rf">↻ Atualizar</button><button id="cv">⬇ Baixar CSV</button><button id="ex">Sair</button></div></header>
+<div class="k"><div><small>Professores</small><b id="k1">0</b></div><div><small>Turmas</small><b id="k2">0</b></div><div><small>Alunos</small><b id="k3">0</b></div><div><small>Abaixo da média</small><b id="k4">0</b></div></div>
+<div class="f"><select id="fp"></select><select id="ft"></select><input id="q" placeholder="Buscar aluno…"></div>
+<div class="w"><table><thead><tr><th class="l">Professor</th><th class="l">Turma</th><th class="l">Aluno</th><th>1º bim.</th><th>2º bim.</th><th>3º bim.</th><th>4º bim.</th><th>Média (0–10)</th><th>Rec. 1º sem.</th><th>Rec. 2º sem.</th><th>Rec. final</th></tr></thead><tbody id="tb"></tbody></table></div>
+</div>
+<script>
+const U='https://mkvzgryjbsphbsyljxcg.supabase.co',KEY='sb_publishable_5pQ9j77psmWKTFXr9m0Kyg_FVRhl0kc';
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let TK=null,ROWS=[],VIEW=[];try{TK=sessionStorage.getItem('adm')}catch(e){}
+const num=v=>{if(v==null)return null;const x=parseFloat(String(v).trim().replace(',','.'));return isNaN(x)?null:x};
+const f2=n=>n==null?'':(Math.trunc(Math.round(n*1e6)/1e4)/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+function calc(d,s){const mx=d.mx||{},v=s.v||{},t=[];let sum=0,n=0;
+ for(let g=1;g<=4;g++){let any=0,x=0,mg=0;for(const f of 'apmb'){mg+=num(mx[g+f])||0;const y=num(v[g+f]);if(y!=null){any=1;x+=y}}
+  t[g]=any?Math.round(x*1e6)/1e6:null;if(any){sum+=Math.min(10,mg>0?x*10/mg:x);n++}}
+ return{t,avg:n?Math.round(sum/n*1e6)/1e6:null}}
+async function api(path,opt={}){const r=await fetch(U+path,{...opt,headers:{apikey:KEY,'Content-Type':'application/json',...(TK?{Authorization:'Bearer '+TK}:{})}});let j=null;try{j=await r.json()}catch(e){}return{ok:r.ok,s:r.status,j}}
+function sair(msg){TK=null;try{sessionStorage.removeItem('adm')}catch(e){}$('#ap').hidden=true;$('#lg').hidden=false;$('#lm').textContent=msg||''}
+async function entrar(){const m=$('#lm'),email=$('#le').value.trim().toLowerCase(),password=$('#lp').value;
+ if(!email||!password){m.textContent='Digite e-mail e senha.';return}
+ m.textContent='Entrando…';TK=null;let r;try{r=await api('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email,password})})}catch(e){m.textContent='Sem conexão com a internet.';return}
+ if(!r.ok||!r.j||!r.j.access_token){m.textContent='E-mail ou senha incorretos.';return}
+ TK=r.j.access_token;try{sessionStorage.setItem('adm',TK)}catch(e){}await load()}
+async function load(){$('#st').textContent='Carregando…';let r;try{r=await api('/rest/v1/rpc/admin_notas',{method:'POST',body:'{}'})}catch(e){$('#st').textContent='Sem conexão.';return}
+ if(r.s==401||r.s==403||(r.j&&/negado/i.test(r.j.message||''))){sair(r.s==401?'Sessão expirada. Entre de novo.':'Esta conta não é de administrador.');return}
+ if(!r.ok||!Array.isArray(r.j)){sair('Erro ao carregar. Confira se você rodou o SQL do painel no Supabase.');return}
+ ROWS=[];r.j.forEach(t=>((t.d&&t.d.st)||[]).forEach(s=>ROWS.push({prof:t.professor,turma:t.turma,nome:s.name||'',pass:num(t.d.pass)??6,R:['R1','R2','R3'].map(k=>num((s.v||{})[k])),...calc(t.d,s)})));
+ $('#lg').hidden=true;$('#ap').hidden=false;$('#st').textContent='Atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+ const ps=[...new Set(ROWS.map(x=>x.prof))];$('#fp').innerHTML='<option value="">Todos os professores</option>'+ps.map(p=>`<option>${esc(p)}</option>`).join('');turmas();draw()}
+function turmas(){const p=$('#fp').value,ts=[...new Set(ROWS.filter(x=>!p||x.prof==p).map(x=>x.turma))];$('#ft').innerHTML='<option value="">Todas as turmas</option>'+ts.map(t=>`<option>${esc(t)}</option>`).join('')}
+function draw(){const p=$('#fp').value,t=$('#ft').value,q=$('#q').value.trim().toLowerCase();
+ VIEW=ROWS.filter(x=>(!p||x.prof==p)&&(!t||x.turma==t)&&(!q||x.nome.toLowerCase().includes(q)));
+ $('#k1').textContent=new Set(VIEW.map(x=>x.prof)).size;$('#k2').textContent=new Set(VIEW.map(x=>x.prof+'|'+x.turma)).size;$('#k3').textContent=VIEW.length;$('#k4').textContent=VIEW.filter(x=>x.avg!=null&&x.avg<x.pass).length;
+ $('#tb').innerHTML=VIEW.map(x=>`<tr class="${x.avg==null?'':x.avg<x.pass?'b':'a'}"><td class="l">${esc(x.prof)}</td><td class="l">${esc(x.turma)}</td><td class="l">${esc(x.nome)}</td>${[1,2,3,4].map(g=>`<td>${f2(x.t[g])}</td>`).join('')}<td class="m">${f2(x.avg)}</td>${x.R.map(r=>`<td>${f2(r)}</td>`).join('')}</tr>`).join('')||'<tr><td class="e" colspan="11">Nenhum aluno encontrado.</td></tr>'}
+function csv(){const L=[['Professor','Turma','Aluno','1º bim.','2º bim.','3º bim.','4º bim.','Média','Rec. 1º sem.','Rec. 2º sem.','Rec. final']];
+ VIEW.forEach(x=>L.push([x.prof,x.turma,x.nome,...[1,2,3,4].map(g=>f2(x.t[g])),f2(x.avg),...x.R.map(f2)]));
+ const txt='\ufeff'+L.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(';')).join('\r\n'),a=document.createElement('a');
+ a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));a.download='notas-professores.csv';a.click()}
+$('#go').onclick=entrar;$('#lp').onkeydown=e=>{if(e.key=='Enter')entrar()};$('#rf').onclick=load;$('#ex').onclick=()=>sair();$('#cv').onclick=csv;
+$('#fp').onchange=()=>{turmas();draw()};$('#ft').onchange=draw;$('#q').oninput=draw;
+if(TK)load();
+</script></body></html>
